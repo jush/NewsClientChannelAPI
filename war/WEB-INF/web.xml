@@ -39,4 +39,14 @@ http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd"
         <servlet-name>TokenServlet</servlet-name>
         <url-pattern>/getToken</url-pattern>
     </servlet-mapping>
+
+    <servlet>
+        <servlet-name>MessageServlet</servlet-name>
+        <servlet-class>org.jush.gaelab.MessageServlet</servlet-class>
+    </servlet>
+
+    <servlet-mapping>
+        <servlet-name>MessageServlet</servlet-name>
+        <url-pattern>/startMsgs</url-pattern>
+    </servlet-mapping>
 </web-app>
