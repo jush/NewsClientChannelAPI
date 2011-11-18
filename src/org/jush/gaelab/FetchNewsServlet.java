@@ -3,12 +3,21 @@ package org.jush.gaelab;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 @SuppressWarnings("serial")
 public class FetchNewsServlet extends HttpServlet {
@@ -28,11 +37,65 @@ public class FetchNewsServlet extends HttpServlet {
         System.out.println(totalFeed);
       }
       reader.close();
-      // parseFeedandPersist(totalFeed, resp);
+      parseFeedandPersist(totalFeed, resp);
     } catch (MalformedURLException e) {
       // ...
     } catch (IOException e) {
       // ...
     }
+  }
+
+  private void parseFeedandPersist(String feedContent, HttpServletResponse resp) throws IOException {
+    Document doc = parseXml(feedContent);
+    NodeList titles = null;
+    NodeList links = null;
+    NodeList descriptions = null;
+
+    if (doc != null) {
+      resp.getWriter().println("node: " + doc.getDocumentElement().getNodeName());
+      titles = doc.getDocumentElement().getElementsByTagName("title");
+      links = doc.getDocumentElement().getElementsByTagName("link");
+      descriptions = doc.getDocumentElement().getElementsByTagName("description");
+    } else {
+      resp.getWriter().println("no input/bad xml input. please send parameter content=<xml>");
+    }
+
+    // persistNewsData(titles, links, descriptions);
+
+    resp.getWriter().println("<h3>Successfully fetched the following news from feed.</h3>");
+    for (int i = 1; i < titles.getLength(); i++) {
+      resp.getWriter().println("<br/>Title: " + titles.item(i).getTextContent());
+      resp.getWriter().println("<br/>Link: <a href=\"" + links.item(i).getTextContent() + "\">" + titles.item(i).getTextContent() + "</a>");
+      if (descriptions.item(i) != null) {
+        resp.getWriter().println("<br/>Description: " + descriptions.item(i).getTextContent());
+      }
+
+      resp.getWriter().println("<br/><br/>");
+    }
+  }
+
+  private static Document parseXml(String strXml) {
+    Document doc = null;
+    String strError;
+    try {
+      DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+      DocumentBuilder db = dbf.newDocumentBuilder();
+
+      StringReader reader = new StringReader(strXml);
+      InputSource inputSource = new InputSource(reader);
+
+      doc = db.parse(inputSource);
+
+      return doc;
+    } catch (IOException ioe) {
+      strError = ioe.toString();
+    } catch (ParserConfigurationException pce) {
+      strError = pce.toString();
+    } catch (SAXException se) {
+      strError = se.toString();
+    } catch (Exception e) {
+      strError = e.toString();
+    }
+    return null;
   }
 }
