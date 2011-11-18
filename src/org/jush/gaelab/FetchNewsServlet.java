@@ -7,6 +7,7 @@ import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
 
+import javax.jdo.PersistenceManager;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -14,10 +15,14 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.jush.gaelab.model.NewsItem;
+import org.jush.gaelab.model.PMF;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import com.google.appengine.api.datastore.Text;
 
 @SuppressWarnings("serial")
 public class FetchNewsServlet extends HttpServlet {
@@ -60,7 +65,7 @@ public class FetchNewsServlet extends HttpServlet {
       resp.getWriter().println("no input/bad xml input. please send parameter content=<xml>");
     }
 
-    // persistNewsData(titles, links, descriptions);
+    persistNewsData(titles, links, descriptions);
 
     resp.getWriter().println("<h3>Successfully fetched the following news from feed.</h3>");
     for (int i = 1; i < titles.getLength(); i++) {
@@ -97,5 +102,32 @@ public class FetchNewsServlet extends HttpServlet {
       strError = e.toString();
     }
     return null;
+  }
+
+  private void persistNewsData(NodeList titles, NodeList links, NodeList descriptions) {
+    // Persists news data feed.
+    // Also clears out previously persisted news feed data
+
+    PersistenceManager pm = PMF.get().getPersistenceManager();
+    javax.jdo.Query query = pm.newQuery(NewsItem.class);
+    Long res = query.deletePersistentAll();
+
+    System.out.println("Datastore deleted  " + res + "records");
+
+    pm = PMF.get().getPersistenceManager();
+
+    try {
+      for (int i = 1; i < titles.getLength(); i++) {
+        NewsItem ni = new NewsItem();
+        ni.setTitle(titles.item(i).getTextContent());
+        ni.setLink(links.item(i).getTextContent());
+        if (descriptions.item(i) != null) {
+          ni.setDescription(new Text(descriptions.item(i).getTextContent()));
+        }
+        pm.makePersistent(ni);
+      }
+    } finally {
+      pm.close();
+    }
   }
 }
