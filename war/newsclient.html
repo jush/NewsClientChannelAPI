@@ -1,0 +1,62 @@
+<html>
+  <head>
+   <script type="text/javascript" src="/_ah/channel/jsapi"></script>   
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <title>Channel API News Client</title>
+
+    <script type="text/javascript">
+    function onOpened() {
+      connected = true;
+      alert('connected to server'); 
+    };
+
+    function onMessage(m) {
+      newMessage = JSON.parse(m.data);
+      var newslink = '<a href=\"' + newMessage.link + '\" >' + newMessage.title + '</a>';
+      var description = newMessage.description;
+
+      document.getElementById('headlines').innerHTML = newslink;
+      document.getElementById('description').innerHTML = description;        
+    };
+
+   function getToken(){
+      var xhr = new XMLHttpRequest();
+      xhr.open('GET', '/getToken', false);
+      xhr.send(null);        
+      if (xhr.status == 200) {
+       return(xhr.responseText);
+      }     
+   };
+
+  function openNewsChannel(token){
+     var channel = new goog.appengine.Channel(token);
+     var handler = {
+          'onopen': onOpened,
+          'onmessage': onMessage,
+          'onerror': function() {},
+          'onclose': function() {}
+       };
+     var socket = channel.open(handler);
+   };
+
+   function initialize() {
+     var token = getToken();
+     if ( token != null  && token != 'error') {
+        //strip newline from returned token
+         var cleantoken =  token.replace("\n", "", "g");
+         openNewsChannel(cleantoken);  
+       } else {
+         alert('Error fetching token');
+       }
+   };
+    </script>    
+  </head>
+
+  <body onload="initialize();">
+   <h2>Breaking News Stories</h2>
+   <hr/>
+   <h3><div id="headlines">Waiting for headlines stream...</div></h3>
+   <p><div id="description">Waiting for description...</div></p>   
+   <hr/>
+  </body>
+</html>
